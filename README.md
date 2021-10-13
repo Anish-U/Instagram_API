@@ -13,7 +13,7 @@
 
 To be able show desired features of REST API such as:
 
-* [x] `POST /users` creates a new user using JSON request body
+* [x] `POST /users/` creates a new user using JSON request body
 * [x] `GET /users/{id}` returns details of specific user as JSON
 * [x] `POST /posts/` creates a new post using JSON request body
 * [x] `GET /posts/{id}` returns specific post as JSON
@@ -48,8 +48,41 @@ A Post object should look like this:
   "userID": "user ID of owner to the post",
 }
 ```
+
+---
+
+## 📸 Screenshots
+
+`POST /users/`
+
+<img src="https://raw.githubusercontent.com/Anish-U/Instagram_API/master/images/createUser_POST.jpg" alt="Project logo">
+
+---
+
+`GET /users/{id}`
+
+<img src="https://raw.githubusercontent.com/Anish-U/Instagram_API/master/images/getUser_GET.jpg" alt="Project logo">
+
+---
+
+`POST /posts/`
+
+<img src="https://raw.githubusercontent.com/Anish-U/Instagram_API/master/images/createPost_POST.jpg" alt="Project logo">
+
+---
+
+`GET /posts/{id}`
+
+<img src="https://raw.githubusercontent.com/Anish-U/Instagram_API/master/images/getPost_GET.jpg" alt="Project logo">
+
+---
+
+`GET /posts/users/{id}`
+
+<img src="https://raw.githubusercontent.com/Anish-U/Instagram_API/master/images/getUserPosts_GET.jpg" alt="Project logo">
+
 ---
 
 ## ✍️ Authors
 
-- [anish-u](https://github.com/anish-u)
+- [Anish-U](https://github.com/anish-u)
