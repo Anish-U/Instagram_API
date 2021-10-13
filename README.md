@@ -15,8 +15,8 @@ To be able show desired features of REST API such as:
 
 * [x] `POST /users` creates a new user using JSON request body
 * [x] `GET /users/{id}` returns details of specific user as JSON
-* [〰] `POST /posts/` creates a new post using JSON request body
-* [〰] `GET /posts/{id}` returns specific post as JSON
+* [x] `POST /posts/` creates a new post using JSON request body
+* [x] `GET /posts/{id}` returns specific post as JSON
 * [〰] `GET /posts/users/{id}` returns list of all posts of specific user as JSON
 
 `The API should be developed only using Go & MongoDB.` <br> 

@@ -28,8 +28,16 @@ type User struct {
 	Password string             `json:"password,omitempty" bson:"password,omitempty"`
 }
 
+type Post struct {
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Caption   string             `json:"Caption,omitempty" bson:"Caption,omitempty"`
+	ImageURL  string             `json:"ImageURL,omitempty" bson:"ImageURL,omitempty"`
+	Timestamp string             `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	UserID    string             `json:"userid,omitempty" bson:"userid,omitempty"`
+}
+
 // Handler to handle user related requests
-func UserHandler(w http.ResponseWriter, r *http.Request) {
+func userHandler(w http.ResponseWriter, r *http.Request) {
 	// Checking for the method of request
 	switch r.Method {
 		case http.MethodGet:
@@ -47,7 +55,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	
 	// Getting the ID from request URL
-	id, _ := primitive.ObjectIDFromHex(strings.TrimPrefix(r.URL.Path, "/users/"))
+	userId, _ := primitive.ObjectIDFromHex(strings.TrimPrefix(r.URL.Path, "/users/"))
 	
 	// A user structure variable
 	var user User
@@ -60,9 +68,9 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	// Retrieving Users collection
 	collection := client.Database("Instagram").Collection("Users")
 	
-	// Search Query for Record with ID == id and if found
+	// Search Query for Record with ID == userId and if found
 	// decode it and store in user structure variable
-	err := collection.FindOne(ctx, User{ID: id}).Decode(&user)
+	err := collection.FindOne(ctx, User{ID: userId}).Decode(&user)
 
 	// If user not found
 	if err != nil {
@@ -76,15 +84,15 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handler to create a user by JSON body request
-func createUser(res http.ResponseWriter, req *http.Request) {
+func createUser(w http.ResponseWriter, r *http.Request) {
 	// Setting the headers to accept JSON
-	res.Header().Set("content-type", "application/json")
+	w.Header().Set("content-type", "application/json")
 
 	// A user structure variable
 	var user User
 
 	// Converting the JSON to structure variable 
-	_ = json.NewDecoder(req.Body).Decode(&user)
+	_ = json.NewDecoder(r.Body).Decode(&user)
 	
 	// Initalising hashing
 	hash := sha256.New()
@@ -99,8 +107,80 @@ func createUser(res http.ResponseWriter, req *http.Request) {
 	// Inserting the record into collection
 	collection.InsertOne(ctx, user)
 
-	json.NewEncoder(res).Encode(map[string]string{"success": "Upload successful"})
+	json.NewEncoder(w).Encode(map[string]string{"success": "User Added successful"})
 }
+
+// Handler to handle post related requests
+func postHandler(w http.ResponseWriter, r *http.Request) {
+	// Checking for the method of request
+	switch r.Method {
+		case http.MethodGet:
+			getPost(w, r) 		// directing to getPost handler 
+		case http.MethodPost:
+			createPost(w, r)	// directing to createPost handler
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	} 
+}
+
+// Handler to get specific post by ID
+func getPost(w http.ResponseWriter, r *http.Request) {
+	// Setting the headers to accept JSON
+	w.Header().Set("content-type", "application/json")
+	
+	// Getting the ID from request URL
+	postId, _ := primitive.ObjectIDFromHex(strings.TrimPrefix(r.URL.Path, "/posts/"))
+	
+	// A post structure variable
+	var post Post
+	
+	// Connecting to Mongo
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, _ = mongo.Connect(ctx, clientOptions)
+	
+	// Retrieving Posts collection
+	collection := client.Database("Instagram").Collection("Posts")
+	
+	// Search Query for Record with ID == postId and if found
+	// decode it and store in post structure variable
+	err := collection.FindOne(ctx, Post{ID: postId}).Decode(&post)
+
+	// If post not found
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+
+	// Converting the post structure variable to JSON
+	json.NewEncoder(w).Encode(post)
+}
+
+// Handler to create a post by JSON body request
+func createPost(w http.ResponseWriter, r *http.Request) {
+	// Setting the headers to accept JSON
+	w.Header().Set("content-type", "application/json")
+
+	// A post structure variable
+	var post Post
+
+	// Converting the JSON to structure variable 
+	_ = json.NewDecoder(r.Body).Decode(&post)
+	
+	// Initializing Timestamp to the post
+	post.Timestamp = time.Now().String()
+	
+	// Retrieving Post collection
+	collection := client.Database("Instagram").Collection("Posts")
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	
+	// Inserting the record into collection
+	collection.InsertOne(ctx, post)
+
+	json.NewEncoder(w).Encode(map[string]string{"success": "Post Upload successful"})
+}
+
 
 // Main Method
 func main() {
@@ -119,7 +199,10 @@ func main() {
 	}
 	
 	// Handler to handle requests at /users route
-	http.HandleFunc("/users/", UserHandler)
+	http.HandleFunc("/users/", userHandler)
+
+	// Handler to handle requests at /users route
+	http.HandleFunc("/posts/", postHandler)
 	
 	// Listening to server at port 8080
 	http.ListenAndServe(":8080", nil)
