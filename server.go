@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -182,6 +183,55 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// Handler to handle posts of a specific user requests
+func userPostHandler(w http.ResponseWriter, r *http.Request) {
+	// Checking for the method of request
+	switch r.Method {
+		case http.MethodGet:
+			getUserPosts(w, r) 		// directing to getUserPosts handler 
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	} 
+}
+
+// Handler to get posts specific to a user by ID
+func getUserPosts(w http.ResponseWriter, r *http.Request) {
+	// Setting the headers to accept JSON
+	w.Header().Set("content-type", "application/json")
+	
+	// Getting the ID from request URL
+	userId := strings.TrimPrefix(r.URL.Path, "/posts/users/")
+		
+	// Connecting to Mongo
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	client, _ = mongo.Connect(ctx, clientOptions)
+	
+	// Retrieving Posts collection
+	collection := client.Database("Instagram").Collection("Posts")
+	
+	// Finding cursor to the all posts where userid == userId
+	filterCur, err := collection.Find(ctx, bson.M{"userid": userId})
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+
+	// Array of post structure
+	var posts []bson.M
+
+	// Storing all the post structures into array
+	if err = filterCur.All(ctx, &posts); err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return		
+	}
+
+	// Converting the array of post structure variable to JSON
+	json.NewEncoder(w).Encode(posts)
+}
+
 // Main Method
 func main() {
 	
@@ -203,6 +253,9 @@ func main() {
 
 	// Handler to handle requests at /users route
 	http.HandleFunc("/posts/", postHandler)
+	
+	// Handler to handle requests at /posts/users route
+	http.HandleFunc("/posts/users/", userPostHandler)
 	
 	// Listening to server at port 8080
 	http.ListenAndServe(":8080", nil)
