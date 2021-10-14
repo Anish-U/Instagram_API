@@ -1,4 +1,4 @@
-module quickstart
+module instagram_api
 
 go 1.17
 
