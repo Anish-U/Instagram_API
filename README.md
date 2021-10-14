@@ -83,6 +83,12 @@ A Post object should look like this:
 
 ---
 
+`Unit Tests => server_test.go`
+
+<img src="https://raw.githubusercontent.com/Anish-U/Instagram_API/master/images/unitTests.jpg" alt="Project logo">
+
+---
+
 ## ✍️ Authors
 
 - [Anish-U](https://github.com/anish-u)
