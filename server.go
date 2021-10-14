@@ -41,34 +41,45 @@ type Post struct {
 func userHandler(w http.ResponseWriter, r *http.Request) {
 	// Checking for the method of request
 	switch r.Method {
-		case http.MethodGet:
-			getUser(w, r) 		// directing to getUser handler 
-		case http.MethodPost:
-			createUser(w, r)	// directing to createUser handler
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	} 
+	case http.MethodGet:
+		getUser(w, r) // directing to getUser handler
+	case http.MethodPost:
+		createUser(w, r) // directing to createUser handler
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 // Handler to get specific user by ID
 func getUser(w http.ResponseWriter, r *http.Request) {
 	// Setting the headers to accept JSON
 	w.Header().Set("content-type", "application/json")
-	
+
 	// Getting the ID from request URL
-	userId, _ := primitive.ObjectIDFromHex(strings.TrimPrefix(r.URL.Path, "/users/"))
-	
+	id := strings.TrimPrefix(r.URL.Path, "/users/")
+
+	// Validating User ID
+	// Mongo BSON ID is 12 byte or 24 character long
+	if len(id) != 24 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{ "error": "ID invalid, please enter a valid User ID" }`))
+		return
+	}
+
+	// Converting string to Object ID
+	userId, _ := primitive.ObjectIDFromHex(id)
+
 	// A user structure variable
 	var user User
-	
+
 	// Connecting to Mongo
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	client, _ = mongo.Connect(ctx, clientOptions)
-	
+
 	// Retrieving Users collection
 	collection := client.Database("Instagram").Collection("Users")
-	
+
 	// Search Query for Record with ID == userId and if found
 	// decode it and store in user structure variable
 	err := collection.FindOne(ctx, User{ID: userId}).Decode(&user)
@@ -92,19 +103,19 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	// A user structure variable
 	var user User
 
-	// Converting the JSON to structure variable 
+	// Converting the JSON to structure variable
 	_ = json.NewDecoder(r.Body).Decode(&user)
-	
+
 	// Initalising hashing
 	hash := sha256.New()
-	
+
 	// Hash the password using SHA256 and updating int structure variable
 	user.Password = (base64.StdEncoding.EncodeToString(hash.Sum([]byte(user.Password))))
-	
+
 	// Retrieving Users collection
 	collection := client.Database("Instagram").Collection("Users")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	
+
 	// Inserting the record into collection
 	collection.InsertOne(ctx, user)
 
@@ -115,34 +126,45 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	// Checking for the method of request
 	switch r.Method {
-		case http.MethodGet:
-			getPost(w, r) 		// directing to getPost handler 
-		case http.MethodPost:
-			createPost(w, r)	// directing to createPost handler
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	} 
+	case http.MethodGet:
+		getPost(w, r) // directing to getPost handler
+	case http.MethodPost:
+		createPost(w, r) // directing to createPost handler
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 // Handler to get specific post by ID
 func getPost(w http.ResponseWriter, r *http.Request) {
 	// Setting the headers to accept JSON
 	w.Header().Set("content-type", "application/json")
-	
+
 	// Getting the ID from request URL
-	postId, _ := primitive.ObjectIDFromHex(strings.TrimPrefix(r.URL.Path, "/posts/"))
-	
+	id := strings.TrimPrefix(r.URL.Path, "/posts/")
+
+	// Validating Post ID
+	// Mongo BSON ID is 12 byte or 24 character long
+	if len(id) != 24 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{ "error": "ID invalid, please enter a valid Post ID" }`))
+		return
+	}
+
+	// Converting string to Object ID
+	postId, _ := primitive.ObjectIDFromHex(id)
+
 	// A post structure variable
 	var post Post
-	
+
 	// Connecting to Mongo
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	client, _ = mongo.Connect(ctx, clientOptions)
-	
+
 	// Retrieving Posts collection
 	collection := client.Database("Instagram").Collection("Posts")
-	
+
 	// Search Query for Record with ID == postId and if found
 	// decode it and store in post structure variable
 	err := collection.FindOne(ctx, Post{ID: postId}).Decode(&post)
@@ -166,50 +188,57 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 	// A post structure variable
 	var post Post
 
-	// Converting the JSON to structure variable 
+	// Converting the JSON to structure variable
 	_ = json.NewDecoder(r.Body).Decode(&post)
-	
+
 	// Initializing Timestamp to the post
 	post.Timestamp = time.Now().String()
-	
+
 	// Retrieving Post collection
 	collection := client.Database("Instagram").Collection("Posts")
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	
+
 	// Inserting the record into collection
 	collection.InsertOne(ctx, post)
 
 	json.NewEncoder(w).Encode(map[string]string{"success": "Post Upload successful"})
 }
 
-
 // Handler to handle posts of a specific user requests
 func userPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Checking for the method of request
 	switch r.Method {
-		case http.MethodGet:
-			getUserPosts(w, r) 		// directing to getUserPosts handler 
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	} 
+	case http.MethodGet:
+		getUserPosts(w, r) // directing to getUserPosts handler
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 // Handler to get posts specific to a user by ID
 func getUserPosts(w http.ResponseWriter, r *http.Request) {
 	// Setting the headers to accept JSON
 	w.Header().Set("content-type", "application/json")
-	
+
 	// Getting the ID from request URL
 	userId := strings.TrimPrefix(r.URL.Path, "/posts/users/")
-		
+
+	// Validating User ID
+	// Mongo BSON ID is 12 byte or 24 character long
+	if len(userId) != 24 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{ "error": "ID invalid, please enter a valid User ID" }`))
+		return
+	}
+
 	// Connecting to Mongo
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	client, _ = mongo.Connect(ctx, clientOptions)
-	
+
 	// Retrieving Posts collection
 	collection := client.Database("Instagram").Collection("Posts")
-	
+
 	// Finding cursor to the all posts where userid == userId
 	filterCur, err := collection.Find(ctx, bson.M{"userid": userId})
 	if err != nil {
@@ -225,7 +254,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 	if err = filterCur.All(ctx, &posts); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
-		return		
+		return
 	}
 
 	// Converting the array of post structure variable to JSON
@@ -234,7 +263,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 
 // Main Method
 func main() {
-	
+
 	fmt.Println("Server Running at http://localhost:8080")
 
 	// Connecting to Mongo
@@ -247,16 +276,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	// Handler to handle requests at /users route
 	http.HandleFunc("/users/", userHandler)
 
 	// Handler to handle requests at /users route
 	http.HandleFunc("/posts/", postHandler)
-	
+
 	// Handler to handle requests at /posts/users route
 	http.HandleFunc("/posts/users/", userPostHandler)
-	
+
 	// Listening to server at port 8080
 	http.ListenAndServe(":8080", nil)
 }
