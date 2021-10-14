@@ -5,12 +5,12 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 )
 
 func TestGetUserHandler(t *testing.T) {
-
 	// Created a new HTTP request to get test user
 	r, err := http.NewRequest("GET", "/users/61680c9492897f0ebd1fbffa", nil)
 	if err != nil {
@@ -34,27 +34,27 @@ func TestGetUserHandler(t *testing.T) {
 
 	// Checking for status code difference
 	if status := rec.Code; status != http.StatusOK {
-		t.Error("Handler returned wrong status code: \nreceived {} \nexpected {} \n",
-			status, http.StatusOK)
+		t.Error("Handler returned wrong status code: \nreceived ",
+			status, " \nexpected ",
+			http.StatusOK, " \n")
 		errors = true
 	}
 
 	// Checking for response body difference
 	if strings.TrimSpace(rec.Body.String()) != strings.TrimSpace(expectedUser) {
-		t.Error("Handler returned unexpected respose body: \nreceived {} \nexpected {} \n",
-			strings.TrimSpace(rec.Body.String()),
-			strings.TrimSpace(expectedUser))
+		t.Error("Handler returned unexpected respose body: \nreceived ",
+			strings.TrimSpace(rec.Body.String()), " \nexpected ",
+			strings.TrimSpace(expectedUser), " \n")
 		errors = true
 	}
 
 	// If no errors log Success Status
 	if !errors {
-		log.Println(" GET /users/{id} - getUsers PASSED ✅")
+		log.Println(" GET /users/{id} - getUser PASSED ✅")
 	}
 }
 
 func TestCreateUserHandler(t *testing.T) {
-
 	// String format JSON of expected test user
 	json := `{
 						"Name":"testUser1",
@@ -91,21 +91,75 @@ func TestCreateUserHandler(t *testing.T) {
 
 	// Checking for status code difference
 	if status := rec.Code; status != http.StatusOK {
-		t.Error("Handler returned wrong status code: \nreceived {} \nexpected {} \n",
-			status, http.StatusOK)
+		t.Error("Handler returned wrong status code: \nreceived ",
+			status, " \nexpected ",
+			http.StatusOK, " \n")
 		errors = true
 	}
 
 	// Checking for response body difference
 	if strings.TrimSpace(rec.Body.String()) != strings.TrimSpace(expectedBody) {
-		t.Error("Handler returned unexpected response body: \nreceived {} \nexpected {} \n",
-			strings.TrimSpace(rec.Body.String()),
-			strings.TrimSpace(expectedBody))
+		t.Error("Handler returned unexpected response body: \nreceived ",
+			strings.TrimSpace(rec.Body.String()), "\nexpected ",
+			strings.TrimSpace(expectedBody), "{} \n")
 		errors = true
 	}
 
 	// If no errors log Success Status
 	if !errors {
 		log.Println(" POST /users/ - createUser PASSED ✅")
+	}
+}
+
+func TestGetPostHandler(t *testing.T) {
+	// Created a new HTTP request to get test post
+	r, err := http.NewRequest("GET", "/posts/61682afe8d7c88a454bf269a", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// HTTPtest recorder
+	rec := httptest.NewRecorder()
+
+	// Retrieving handler to handle posts requests
+	handler := http.HandlerFunc(postHandler)
+
+	// String format JSON of expected test post
+	expectedPost := `{"_id":"61682afe8d7c88a454bf269a","Caption":"TestPost","ImageURL":"images/test-post.jpg","userid":"6168231505771cdc4aa206d8"}`
+
+	// Serving a test HTTP to handle test request
+	handler.ServeHTTP(rec, r)
+
+	// Flag variable for errors
+	errors := false
+
+	// Checking for status code difference
+	if status := rec.Code; status != http.StatusOK {
+		t.Error("Handler returned wrong status code: \nreceived ",
+			status, " \nexpected ",
+			http.StatusOK, " \n")
+		errors = true
+	}
+
+	// Getting response body
+	var resposeBody = strings.TrimSpace(rec.Body.String())
+
+	// Regular Expression to remove timestamp
+	reg := regexp.MustCompile(`"timestamp":"([a-zA-Z0-9\- :+=.]+)",`)
+
+	// Removing timestamp from response body
+	resposeBody = reg.ReplaceAllString(resposeBody, "")
+
+	// Checking for response body difference
+	if strings.TrimSpace(resposeBody) != strings.TrimSpace(expectedPost) {
+		t.Error("Handler returned unexpected respose body: \nreceived ",
+			strings.TrimSpace(resposeBody), "\nexpected ",
+			strings.TrimSpace(expectedPost), "\n")
+		errors = true
+	}
+
+	// If no errors log Success Status
+	if !errors {
+		log.Println(" GET /posts/{id} - getPost PASSED ✅")
 	}
 }
