@@ -163,3 +163,60 @@ func TestGetPostHandler(t *testing.T) {
 		log.Println(" GET /posts/{id} - getPost PASSED ✅")
 	}
 }
+
+func TestCreatePostHandler(t *testing.T) {
+	// String format JSON of expected test post
+	json := `{
+						"Caption":"testPost1",
+						"ImageURL":"images/test-post1.jpg",
+						"UserID":"6168231505771cdc4aa206d8"
+					}`
+
+	// String converted to bytes array
+	jsonBytes := []byte(json)
+
+	// Created a new HTTP request to POST test post
+	r, err := http.NewRequest("POST", "/posts/", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Setting headers for HTTP request
+	r.Header.Set("Content-Type", "application/json")
+
+	// HTTPtest recorder
+	rec := httptest.NewRecorder()
+
+	// Retrieving handler to handle posts requests
+	handler := http.HandlerFunc(postHandler)
+
+	// String format JSON of expected body after successful creation of post
+	expectedBody := `{"success":"Post Upload successful"}`
+
+	// Serving a test HTTP to handle test request
+	handler.ServeHTTP(rec, r)
+
+	// Flag variable for errors
+	errors := false
+
+	// Checking for status code difference
+	if status := rec.Code; status != http.StatusOK {
+		t.Error("Handler returned wrong status code: \nreceived ",
+			status, " \nexpected ",
+			http.StatusOK, " \n")
+		errors = true
+	}
+
+	// Checking for response body difference
+	if strings.TrimSpace(rec.Body.String()) != strings.TrimSpace(expectedBody) {
+		t.Error("Handler returned unexpected response body: \nreceived ",
+			strings.TrimSpace(rec.Body.String()), "\nexpected ",
+			strings.TrimSpace(expectedBody), "{} \n")
+		errors = true
+	}
+
+	// If no errors log Success Status
+	if !errors {
+		log.Println(" POST /posts/ - createPost PASSED ✅")
+	}
+}
