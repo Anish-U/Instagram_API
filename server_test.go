@@ -125,7 +125,7 @@ func TestGetPostHandler(t *testing.T) {
 	handler := http.HandlerFunc(postHandler)
 
 	// String format JSON of expected test post
-	expectedPost := `{"_id":"61682afe8d7c88a454bf269a","Caption":"TestPost","ImageURL":"images/test-post.jpg","userid":"6168231505771cdc4aa206d8"}`
+	expectedPost := `{"_id":"61682afe8d7c88a454bf269a","Caption":"TestPost","ImageURL":"images/test-post.jpg","userid":"61680c9492897f0ebd1fbffa"}`
 
 	// Serving a test HTTP to handle test request
 	handler.ServeHTTP(rec, r)
@@ -218,5 +218,58 @@ func TestCreatePostHandler(t *testing.T) {
 	// If no errors log Success Status
 	if !errors {
 		log.Println(" POST /posts/ - createPost PASSED ✅")
+	}
+}
+
+func TestGetUserPostsHandler(t *testing.T) {
+	// Created a new HTTP request to get posts of test user
+	r, err := http.NewRequest("GET", "/posts/users/61680c9492897f0ebd1fbffa", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// HTTPtest recorder
+	rec := httptest.NewRecorder()
+
+	// Retrieving handler to handle posts requests
+	handler := http.HandlerFunc(userPostHandler)
+
+	// String format JSON of expected test post
+	expectedPosts := `[{"Caption":"TestPost","ImageURL":"images/test-post.jpg","_id":"61682afe8d7c88a454bf269a","userid":"61680c9492897f0ebd1fbffa"},{"Caption":"testPost1","ImageURL":"images/test-post1.jpg","_id":"61683f5b9b7e6571a41ae5a5","userid":"61680c9492897f0ebd1fbffa"}]`
+
+	// Serving a test HTTP to handle test request
+	handler.ServeHTTP(rec, r)
+
+	// Flag variable for errors
+	errors := false
+
+	// Checking for status code difference
+	if status := rec.Code; status != http.StatusOK {
+		t.Error("Handler returned wrong status code: \nreceived ",
+			status, " \nexpected ",
+			http.StatusOK, " \n")
+		errors = true
+	}
+
+	// Getting response body
+	var resposeBody = strings.TrimSpace(rec.Body.String())
+
+	// Regular Expression to remove timestamp
+	reg := regexp.MustCompile(`"timestamp":"([a-zA-Z0-9\- :+=.]+)",`)
+
+	// Removing timestamp from response body
+	resposeBody = reg.ReplaceAllString(resposeBody, "")
+
+	// Checking for response body difference
+	if strings.TrimSpace(resposeBody) != strings.TrimSpace(expectedPosts) {
+		t.Error("Handler returned unexpected respose body: \nreceived ",
+			strings.TrimSpace(resposeBody), "\nexpected ",
+			strings.TrimSpace(expectedPosts), "\n")
+		errors = true
+	}
+
+	// If no errors log Success Status
+	if !errors {
+		log.Println(" GET /posts/users/{id} - getUserPosts PASSED ✅")
 	}
 }
