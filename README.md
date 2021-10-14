@@ -18,6 +18,7 @@ To be able show desired features of REST API such as:
 * [x] `POST /posts/` creates a new post using JSON request body
 * [x] `GET /posts/{id}` returns specific post as JSON
 * [x] `GET /posts/users/{id}` returns list of all posts of specific user as JSON
+* [x] `server_test.go` unit tests
 
 `The API should be developed only using Go & MongoDB.` <br> 
 `No frameworks / third-party libraries to be used.`
